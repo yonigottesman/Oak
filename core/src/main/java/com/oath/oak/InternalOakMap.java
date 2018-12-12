@@ -898,7 +898,7 @@ class InternalOakMap<K, V> {
                 memoryManager.iterStartOperation();
                 return internalNext();
             } finally {
-                memoryManager.iterStartOperation();
+                memoryManager.iterStopOperation();
             }
         }
 
