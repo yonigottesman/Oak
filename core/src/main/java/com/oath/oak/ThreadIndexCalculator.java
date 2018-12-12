@@ -33,8 +33,8 @@ public class ThreadIndexCalculator {
     }
 
     public void releaseIndex() {
-        indices[local.get()].set(-1);
-        local.set(-1);
+//        indices[local.get()].set(-1);
+//        local.set(-1);
     }
 
 

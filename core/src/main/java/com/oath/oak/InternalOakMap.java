@@ -865,6 +865,7 @@ class InternalOakMap<K, V> {
             memoryManager.startOperation();
             init();
             memoryManager.stopOperation();
+            memoryManager.globalStartOperation();
         }
 
         boolean tooLow(Object key) {
@@ -894,10 +895,10 @@ class InternalOakMap<K, V> {
 
         public T next() {
             try {
-                memoryManager.startOperation();
+                memoryManager.iterStartOperation();
                 return internalNext();
             } finally {
-                memoryManager.stopOperation();
+                memoryManager.iterStartOperation();
             }
         }
 
