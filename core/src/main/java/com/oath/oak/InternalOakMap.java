@@ -896,10 +896,10 @@ class InternalOakMap<K, V> {
 
         public T next() {
             try {
-                memoryManager.startOperation(iterationEpoch);
+                memoryManager.iteratorStartOperation(iterationEpoch);
                 return internalNext();
             } finally {
-                memoryManager.stopOperation();
+                memoryManager.iteratorStopOperation();
             }
         }
 

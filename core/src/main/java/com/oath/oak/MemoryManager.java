@@ -119,14 +119,9 @@ class MemoryManager {
     }
 
     long getandIncrementEpoch(){
-        return max.getAndIncrement();
+        return max.getAndIncrement() + BUSY_BIT;
     }
 
-    void startOperation(long epoch) {
-        int idx = threadIndexCalculator.getIndex();
-        AtomicLong timeStamp = timeStamps[idx];
-        timeStamp.set(epoch + BUSY_BIT);
-    }
 
 
     void startOperation() {
@@ -169,6 +164,21 @@ class MemoryManager {
         }
     }
 
+
+    void iteratorStartOperation(long epoch) {
+        int idx = threadIndexCalculator.getIndex();
+        AtomicLong timeStamp = timeStamps[idx];
+        timeStamp.set(epoch);
+        return;
+    }
+
+    void iteratorStopOperation() {
+        int idx = threadIndexCalculator.getIndex();
+        AtomicLong timeStamp = timeStamps[idx];
+        timeStamp.set(0);
+        threadIndexCalculator.releaseIndex();
+    }
+    
     void assertIfNotIdle() {
         int idx = threadIndexCalculator.getIndex();
         AtomicLong timeStamp = timeStamps[idx];
