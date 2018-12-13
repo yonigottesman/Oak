@@ -118,6 +118,17 @@ class MemoryManager {
         return timeStamp & (~IDLE_MASK);
     }
 
+    long getandIncrementEpoch(){
+        return max.getAndIncrement();
+    }
+
+    void startOperation(long epoch) {
+        int idx = threadIndexCalculator.getIndex();
+        AtomicLong timeStamp = timeStamps[idx];
+        timeStamp.set(epoch + BUSY_BIT);
+    }
+
+
     void startOperation() {
         int idx = threadIndexCalculator.getIndex();
         AtomicLong timeStamp = timeStamps[idx];
