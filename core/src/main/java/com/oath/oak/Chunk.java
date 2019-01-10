@@ -226,7 +226,6 @@ public class Chunk<K, V> {
         int pos = keysManager.getPosition();
         bbThread.limit(pos + ki + length);
         bbThread.position(pos + ki);
-        bbThread = bbThread.slice();
         return bbThread;
     }
 
@@ -909,7 +908,7 @@ public class Chunk<K, V> {
 
             int compare=-1;
             if (next != Chunk.NONE)
-                compare = compare(from,readKey(next));
+                compare = compare(from, readKey(next));
 
             while (next != Chunk.NONE &&
                     (compare > 0 ||
@@ -918,7 +917,7 @@ public class Chunk<K, V> {
                 next = get(next, OFFSET_NEXT);
                 handle = get(next, OFFSET_HANDLE_INDEX);
                 if (next != Chunk.NONE)
-                    compare = compare(from,readKey(next));
+                    compare = compare(from, readKey(next));
             }
         }
 
