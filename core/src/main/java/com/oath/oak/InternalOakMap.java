@@ -509,16 +509,16 @@ class InternalOakMap<K, V> {
             }
             int prevEi = c.linkEntry(ei, true, key);
             if (prevEi != ei) {
-                Handle handle = c.getHandle(prevEi);
-                if (handle == null) {
-                    ei = prevEi;
-                    prevHi = c.getHandleIndex(prevEi);
-                } else {
-                    if (handle.compute(computer)) {
+
+                prevHi = c.getHandleIndex(prevEi);
+                if (prevHi != -1) {
+                    if (c.getHandle(prevEi).compute(computer)) {
                         // compute was successful and handle wasn't found deleted; in case
                         // this handle was already found as deleted, continue to construct another handle
                         return;
                     }
+                } else {
+                    ei = prevEi;
                 }
             }
         }

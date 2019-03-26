@@ -19,6 +19,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.nio.ByteBuffer;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class ByteBufferBenchmark {
@@ -31,7 +32,13 @@ public class ByteBufferBenchmark {
 
         ByteBuffer byteBuffer;
 
+
         int bytes = 1024*1024*1024;
+
+        @Param({"1000000"})
+        int operations;
+
+        int[] randomIndex;
 
         @Setup()
         public void setup() {
@@ -39,6 +46,12 @@ public class ByteBufferBenchmark {
                 byteBuffer = ByteBuffer.allocate(bytes);
             } else {
                 byteBuffer = ByteBuffer.allocateDirect(bytes);
+            }
+
+            Random r = new Random();
+            randomIndex = new int[operations];
+            for (int i = 0; i < operations; ++i) {
+                randomIndex[i] = r.nextInt(bytes);
             }
         }
     }
@@ -52,8 +65,8 @@ public class ByteBufferBenchmark {
     @Threads(1)
     @Benchmark
     public void put(Blackhole blackhole, BenchmarkState state) {
-        for (int i=0; i < state.bytes; ++i) {
-            state.byteBuffer.put(i, (byte) i);
+        for (int i=0; i < state.operations; ++i) {
+            blackhole.consume(state.byteBuffer.put(state.randomIndex[i], (byte) i));
         }
     }
 
@@ -65,8 +78,22 @@ public class ByteBufferBenchmark {
     @Threads(1)
     @Benchmark
     public void get(Blackhole blackhole, BenchmarkState state) {
-        for (int i=0; i < state.bytes; ++i) {
-            blackhole.consume(state.byteBuffer.get(i));
+        for (int i=0; i < state.operations; ++i) {
+            blackhole.consume(state.byteBuffer.get(state.randomIndex[i]));
+        }
+    }
+
+    @Warmup(iterations = 1)
+    @Measurement(iterations = 10)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Fork(value = 1)
+    @Threads(1)
+    @Benchmark
+    public void compare(Blackhole blackhole, BenchmarkState state) {
+        for (int i=0; i < state.operations; ++i) {
+            byte value = state.byteBuffer.get(state.randomIndex[i]);
+            blackhole.consume(Byte.compare(value, (byte)i));
         }
     }
 
@@ -74,7 +101,7 @@ public class ByteBufferBenchmark {
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
                 .include(ByteBufferBenchmark.class.getSimpleName())
-                .forks(1)
+                .forks(0)
                 .threads(1)
                 .build();
 
