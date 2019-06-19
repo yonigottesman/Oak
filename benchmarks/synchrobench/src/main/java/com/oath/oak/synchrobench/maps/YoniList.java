@@ -3,6 +3,7 @@ package com.oath.oak.synchrobench.maps;
 import com.oath.oak.NativeAllocator.OakNativeMemoryAllocator;
 import com.oath.oak.OakMemoryAllocator;
 import com.oath.oak.synchrobench.contention.abstractions.CompositionalOakMap;
+import io.netty.buffer.PooledByteBufAllocator;
 
 import java.nio.ByteBuffer;
 import java.util.Comparator;
@@ -12,6 +13,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class YoniList<K extends MyBuffer, V extends MyBuffer> implements CompositionalOakMap<K, V> {
     private ConcurrentSkipListMap<Object, ByteBuffer> skipListMap;
     private OakMemoryAllocator allocator;
+
 
     Comparator<Object> comparator;
     public YoniList() {
@@ -77,7 +79,10 @@ public class YoniList<K extends MyBuffer, V extends MyBuffer> implements Composi
 
     @Override
     public void removeOak(K key) {
-        skipListMap.remove(key);
+        ByteBuffer val = skipListMap.remove(key);
+        allocator.free(val);
+        //TODO YONIGO - free key
+
     }
 
     @Override
