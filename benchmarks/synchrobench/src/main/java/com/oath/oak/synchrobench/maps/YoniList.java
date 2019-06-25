@@ -119,6 +119,10 @@ public class YoniList<K extends MyBuffer, V extends MyBuffer> implements Composi
 
     @Override
     public void clear() {
+        skipListMap.entrySet().forEach(entry -> {
+            allocator.free(entry.getValue());
+            allocator.free((ByteBuffer) entry.getKey());
+        });
         skipListMap = new ConcurrentSkipListMap<>(comparator);
         allocator.close();
         allocator = new OakNativeMemoryAllocator(Integer.MAX_VALUE);
