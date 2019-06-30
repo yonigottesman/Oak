@@ -3,6 +3,7 @@ package com.oath.oak.synchrobench.maps;
 import com.oath.oak.NativeAllocator.OakNativeMemoryAllocator;
 import com.oath.oak.OakMemoryAllocator;
 import com.oath.oak.synchrobench.contention.abstractions.CompositionalOakMap;
+import com.oath.oak.synchrobench.contention.benchmark.Parameters;
 
 import java.nio.ByteBuffer;
 import java.util.Comparator;
@@ -68,7 +69,16 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
     @Override
     public boolean getOak(K key) {
         Cell value = skipListMap.get(key);
-        return  value != null && value.value != null;
+        if (Parameters.zeroCopy) {
+            return  value != null && value.value != null;
+        } else {
+            if (value != null && value.value != null) {
+                MyBuffer des = MyBufferOak.serializer.deserialize(value.value.get());
+                return (des != null);
+            } else {
+                return false;
+            }
+        }
     }
 
     @Override
@@ -125,7 +135,7 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
     public void removeOak(K key) {
         Cell val = skipListMap.remove(key);
         allocator.free((ByteBuffer) val.key.get());
-        allocator.free((ByteBuffer) val.value.get());
+        allocator.free(val.value.get());
         // TODO YONIGO - need some sync here!
     }
 
@@ -142,6 +152,7 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
     @Override
     public boolean ascendOak(K from, int length) {
         Iterator iter = skipListMap.tailMap(from, true).keySet().iterator();
+        iterate(iter, length);
         int i = 0;
         while (iter.hasNext() && i < length) {
             Cell cell = (Cell) iter.next();
@@ -156,6 +167,7 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
     @Override
     public boolean descendOak(K from, int length) {
         Iterator iter = skipListMap.descendingMap().tailMap(from, true).keySet().iterator();
+        iterate(iter, length);
         int i = 0;
         while (iter.hasNext() && i < length) {
             Cell cell = (Cell) iter.next();
@@ -165,6 +177,28 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
         }
         return i == length;
     }
+
+
+    private boolean iterate(Iterator iter, int length) {
+        int i = 0;
+        while (iter.hasNext() && i < length) {
+            Cell cell = (Cell) iter.next();
+            //only if cell is not null value is not deleted or not set yet.
+            if (cell.value.get() != null) {
+                if (Parameters.zeroCopy) {
+                    MyBuffer des = MyBufferOak.serializer.deserialize(cell.value.get());
+                    //YONIGO - I just do this so that hopefully jvm doesnt optimize out the deserialize
+                    if (des != null) i++;
+                } else {
+                    i++;
+                }
+
+            }
+        }
+        return i == length;
+    }
+
+
 
     @Override
     public void clear() {
