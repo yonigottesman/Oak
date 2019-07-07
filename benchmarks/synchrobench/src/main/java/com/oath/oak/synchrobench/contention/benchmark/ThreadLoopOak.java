@@ -139,7 +139,7 @@ public class ThreadLoopOak implements Runnable {
                     }
                 }
             } else {
-                if (!change) {
+                if (change) {
                     if (bench.getOak(key))
                         numContains++;
                     else
