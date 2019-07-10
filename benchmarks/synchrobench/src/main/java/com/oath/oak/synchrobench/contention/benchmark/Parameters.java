@@ -7,7 +7,9 @@ package com.oath.oak.synchrobench.contention.benchmark;
  * @author Vincent Gramoli
  */
 public class Parameters {
-	enum KeyDist {
+
+
+    enum KeyDist {
 		RANDOM,
 		INCREASING
 	}
@@ -28,6 +30,7 @@ public class Parameters {
 	static boolean change = false;
 
 	public static boolean zeroCopy = false;
+	public static boolean copmuteIfPresent;
 
 	public static KeyDist keyDistribution = KeyDist.RANDOM;
 

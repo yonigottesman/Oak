@@ -280,7 +280,9 @@ public class Test {
                         Parameters.change = true;
                 } else if (currentArg.equals("--buffer")) {
                         Parameters.zeroCopy = true;
-                } else if (currentArg.equals("--inc")) {
+                } else if (currentArg.equals("--computeifpresent")) {
+					Parameters.copmuteIfPresent = true;
+				} else if (currentArg.equals("--inc")) {
                         Parameters.keyDistribution = Parameters.KeyDist.INCREASING;
 				} else {
 					String optionValue = args[argNumber++];

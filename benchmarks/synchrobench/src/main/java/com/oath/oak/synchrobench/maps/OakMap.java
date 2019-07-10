@@ -136,6 +136,11 @@ public class OakMap<K extends MyBuffer, V extends MyBuffer> implements Compositi
         return oak.size();
     }
 
+    @Override
+    public void putIfAbsentComputeIfPresentOak(K key, V value) {
+        oak.zc().putIfAbsentComputeIfPresent(key, value, b -> b.putInt(1,b.getInt(1) + 1));
+    }
+
     public void printMemStats() {
         OakNativeMemoryAllocator.Stats stats = ma.getStats();
         System.out.printf("\tReleased buffers: \t\t%d\n", stats.releasedBuffers);

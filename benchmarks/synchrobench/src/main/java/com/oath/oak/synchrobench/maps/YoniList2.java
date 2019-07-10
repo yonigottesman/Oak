@@ -114,6 +114,7 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
 
     @Override
     public boolean putIfAbsentOak(K key, V value) {
+        //TODO YONIGO - this wont work with puts together.
         Cell newCell = new Cell();
 
         newCell.key.set(key);
@@ -199,6 +200,42 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
     @Override
     public int size() {
         return skipListMap.size();
+    }
+
+    @Override
+    public void putIfAbsentComputeIfPresentOak(K key, V value) {
+        Cell newCell = new Cell();
+        newCell.key.set(key);
+        Cell prevValue = skipListMap.putIfAbsent(newCell, newCell);
+
+        if (prevValue == null) {
+            ByteBuffer keybb = allocator.allocate(MyBufferOak.serializer.calculateSize(key));
+            ByteBuffer valuebb = allocator.allocate(MyBufferOak.serializer.calculateSize( value));
+            MyBufferOak.serializer.serialize(key, keybb);
+            MyBufferOak.serializer.serialize(value, valuebb);
+            if (!newCell.value.compareAndSet(null, valuebb)) {
+                allocator.free(valuebb);
+                synchronized (newCell.value) {
+                    newCell.value.get().putInt(1, newCell.value.get().getInt(1) + 1);
+                }
+            }
+            newCell.key.set(keybb);
+        } else {
+            if (prevValue.value.get() == null) {
+                ByteBuffer valuebb = allocator.allocate(MyBufferOak.serializer.calculateSize( value));
+                MyBufferOak.serializer.serialize(value, valuebb);
+                if (!prevValue.value.compareAndSet(null, valuebb)) {
+                    allocator.free(valuebb);
+                    synchronized (newCell.value) {
+                        prevValue.value.get().putInt(1, prevValue.value.get().getInt(1) + 1);
+                    }
+                }
+            } else {
+                synchronized (prevValue.value) {
+                    prevValue.value.get().putInt(1, prevValue.value.get().getInt(1) + 1);
+                }
+            }
+        }
     }
 
     public class MyReference<T>{

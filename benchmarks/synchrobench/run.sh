@@ -6,22 +6,22 @@ java=java
 jarfile="oak-benchmarks-synchrobench-0.1.6-SNAPSHOT.jar"
 
 thread="01 04 08 12"
-size="20000000"
+size="10000000"
 keysize="100"
 valuesize="1000"
 #writes="0 50"
 writes="0"
 warmup="0"
 iterations="3"
-duration="60000"
+duration="30000"
 #gcAlgorithms="-XX:+UseParallelOldGC -XX:+UseConcMarkSweepGC -XX:+UseG1GC"
 
-declare -A heap_limit=(["OakMap"]="26g"
-                       ["JavaSkipListMap"]="64g"
-                       ["YoniList2"]="26g"
+declare -A heap_limit=(["OakMap"]="12g"
+                       ["JavaSkipListMap"]="32g"
+                       ["YoniList2"]="12g"
                       )
 
-directMemSize="40g"
+directMemSize="20g"
 
 if [ ! -d "${output}" ]; then
   mkdir $output
@@ -35,13 +35,14 @@ fi
 ###############################
 
 declare -A scenarios=(
-#                      ["get-only"]="-c"
-#                      ["zc-get-only"]="-c --buffer"
-#                      ["ascend-only"]=""
+                      ["get-only"]="-c"
+                      ["zc-get-only"]="-c --buffer"
+                      ["ascend-only"]=""
                       ["zc-ascend-only"]="--buffer"
-#                      ["descend-only"]="-c -a 100"
-#                      ["zc-descend-only"]="--buffer -c -a 100"
-#                      ["put-only"]="-a 0 -u 100"
+                      ["descend-only"]="-c -a 100"
+                      ["zc-descend-only"]="--buffer -c -a 100"
+                      ["put-only"]="-a 0 -u 100"
+                      ["put-only-computeifpresent"]="-a 0 -u 100 --computeifpresent"
                      )
 
 #declare -A scenarios=(["put-only"]="-a 0 -u 100")
