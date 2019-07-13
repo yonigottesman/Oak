@@ -118,7 +118,12 @@ public class ThreadLoopOak implements Runnable {
                 newKey.buffer.putInt(0,newInt);
                 newVal.buffer.putInt(0,newInt);
                 if (!change) {
-                    bench.putOak(newKey,newVal);
+                    if (Parameters.copmuteIfPresent) {
+                        bench.putIfAbsentComputeIfPresentOak(newKey, newVal);
+                    } else {
+                        bench.putOak(newKey, newVal);
+                    }
+
                     numAdd++;
                 } else {
                     if (bench.putIfAbsentOak(newKey,newVal)) {
@@ -139,7 +144,7 @@ public class ThreadLoopOak implements Runnable {
                     }
                 }
             } else {
-                if (!change) {
+                if (change) {
                     if (bench.getOak(key))
                         numContains++;
                     else

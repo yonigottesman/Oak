@@ -3,8 +3,10 @@ package com.oath.oak.synchrobench.contention.benchmark;
 import com.oath.oak.synchrobench.contention.abstractions.CompositionalMap;
 import com.oath.oak.synchrobench.contention.abstractions.CompositionalOakMap;
 import com.oath.oak.synchrobench.contention.abstractions.MaintenanceAlg;
+import com.oath.oak.synchrobench.maps.JavaSkipListMap;
 import com.oath.oak.synchrobench.maps.MyBuffer;
 import com.oath.oak.synchrobench.maps.OakMap;
+import com.oath.oak.synchrobench.maps.YoniList2;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -70,7 +72,8 @@ public class Test {
 		}
 	};
 
-	public void fill(final int range, final long size) {
+	public long fill(final int range, final long size) {
+		long operations = 0;
 		for (long i = size; i > 0;) {
 			Integer v = s_random.get().nextInt(range);
 			switch(benchType) {
@@ -82,12 +85,14 @@ public class Test {
 				if (oakBench.putIfAbsentOak(key, val)) {
 					i--;
 				}
+				operations++;
 				break;
 			default:
 				System.err.println("Wrong benchmark type");
 				System.exit(0);
 			}	
 		}
+		return operations;
 	}
 
 
@@ -98,19 +103,14 @@ public class Test {
 	@SuppressWarnings("unchecked")
 	public void instanciateAbstraction(
 			String benchName) {
-		try {
-			Class<CompositionalMap<Integer, Integer>> benchClass = (Class<CompositionalMap<Integer, Integer>>) Class
-					.forName(benchName);
-			Constructor<CompositionalMap<Integer, Integer>> c = benchClass
-					.getConstructor();
-			methods = benchClass.getDeclaredMethods();
-			
-            if (CompositionalOakMap.class.isAssignableFrom(benchClass)) {
-				oakBench = (CompositionalOakMap<MyBuffer, MyBuffer>) c.newInstance();
-				benchType = Type.OAKMAP;
-			}
-			
-		} catch (Exception e) {
+		benchType = Type.OAKMAP;
+		if (benchName.equals("JavaSkipListMap")) {
+			oakBench = new JavaSkipListMap<>();
+		} else if (benchName.equals("OakMap")) {
+			oakBench = new OakMap<>();
+		} else if (benchName.equals("YoniList2")) {
+			oakBench = new YoniList2<>();
+		} else {
 			System.err.println("Cannot find benchmark class: " + benchName);
 			System.exit(-1);
 		}
@@ -163,10 +163,10 @@ public class Test {
 	 */
 	private void execute(int milliseconds, boolean maint)
 			throws InterruptedException {
-		long startTime;
-		fill(Parameters.range, Parameters.size);
-
-		System.out.println("Initialization complete. ");
+		long startTime = System.currentTimeMillis();
+		double count = fill(Parameters.range, Parameters.size);
+		double initTime = ((double) (System.currentTimeMillis() - startTime)) / 1000.0;
+		System.out.println("Initialization complete in (s) " + initTime + " operations " + count);
 
 		Thread.sleep(5000);
 		startTime = System.currentTimeMillis();
@@ -280,7 +280,9 @@ public class Test {
                         Parameters.change = true;
                 } else if (currentArg.equals("--buffer")) {
                         Parameters.zeroCopy = true;
-                } else if (currentArg.equals("--inc")) {
+                } else if (currentArg.equals("--computeifpresent")) {
+					Parameters.copmuteIfPresent = true;
+				} else if (currentArg.equals("--inc")) {
                         Parameters.keyDistribution = Parameters.KeyDist.INCREASING;
 				} else {
 					String optionValue = args[argNumber++];

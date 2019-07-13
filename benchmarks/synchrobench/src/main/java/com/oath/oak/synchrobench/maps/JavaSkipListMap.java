@@ -24,6 +24,17 @@ public class JavaSkipListMap<K extends MyBuffer, V extends MyBuffer> implements 
     }
 
     @Override
+    public void putIfAbsentComputeIfPresentOak(K key, V value) {
+        MyBuffer res = skipListMap.putIfAbsent(key, value);
+        if (res != null) {
+            synchronized (res) {
+                res.buffer.putInt(1, res.buffer.getInt(1) + 1);
+            }
+        }
+
+    }
+
+    @Override
     public void removeOak(K key) {
         skipListMap.remove(key);
     }
