@@ -152,13 +152,13 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
 
     @Override
     public boolean ascendOak(K from, int length) {
-        Iterator iter = skipListMap.tailMap(from, true).keySet().iterator();
+        Iterator iter = skipListMap.tailMap(from, true).entrySet().iterator();
         return iterate(iter, length);
     }
 
     @Override
     public boolean descendOak(K from, int length) {
-        Iterator iter = skipListMap.descendingMap().tailMap(from, true).keySet().iterator();
+        Iterator iter = skipListMap.descendingMap().tailMap(from, true).entrySet().iterator();
         return iterate(iter, length);
     }
 
