@@ -8,6 +8,7 @@ import com.oath.oak.synchrobench.contention.benchmark.Parameters;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -166,7 +167,8 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
     private boolean iterate(Iterator iter, int length) {
         int i = 0;
         while (iter.hasNext() && i < length) {
-            Cell cell = (Cell) iter.next();
+            Map.Entry<Object, Cell> entry = (Map.Entry<Object, Cell>) iter.next();
+            Cell cell = entry.getValue();
             //only if cell is not null value is not deleted or not set yet.
             if (cell.value.get() != null) {
                 if (!Parameters.zeroCopy) {

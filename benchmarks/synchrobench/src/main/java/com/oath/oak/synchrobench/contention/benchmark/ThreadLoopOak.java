@@ -36,6 +36,7 @@ public class ThreadLoopOak implements Runnable {
      * The counters of the thread successful operations
      */
     public long numAdd = 0;
+    public long numScan = 0;
     public long numRemove = 0;
     public long numAddAll = 0;
     public long numRemoveAll = 0;
@@ -70,6 +71,8 @@ public class ThreadLoopOak implements Runnable {
      * |-----------write----------|--readAll--|--readSome--| cdf[1]
      */
     int[] cdf = new int[3];
+    public double putElapsedTime = 0;
+    public double scanElapsedTime = 0;
 
     public ThreadLoopOak(short myThreadNum,
                          CompositionalOakMap<MyBuffer, MyBuffer> bench, Method[] methods) {
@@ -121,7 +124,11 @@ public class ThreadLoopOak implements Runnable {
                     if (Parameters.copmuteIfPresent) {
                         bench.putIfAbsentComputeIfPresentOak(newKey, newVal);
                     } else {
+                        long startTime = System.currentTimeMillis();
                         bench.putOak(newKey, newVal);
+                        long endTime = System.currentTimeMillis();
+                        putElapsedTime += ((double) (endTime - startTime)) / 1000.0;
+
                     }
 
                     numAdd++;
@@ -144,6 +151,7 @@ public class ThreadLoopOak implements Runnable {
                     }
                 }
             } else {
+                long startTime = System.currentTimeMillis();
                 if (change) {
                     if (bench.getOak(key))
                         numContains++;
@@ -156,6 +164,9 @@ public class ThreadLoopOak implements Runnable {
                         failures++;
                     }
                 }
+                long endTime = System.currentTimeMillis();
+                numScan++;
+                scanElapsedTime += ((double) (endTime - startTime)) / 1000.0;
             }
 
             total++;

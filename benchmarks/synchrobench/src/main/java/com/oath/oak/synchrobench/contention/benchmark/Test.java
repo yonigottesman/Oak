@@ -471,6 +471,11 @@ public class Test {
 	 * Print the statistics on the standard output
 	 */
 	private void printBasicStats() {
+		double putElapsedTime = 0;
+		double putTotal = 0;
+
+		double scanElapsedTime = 0;
+		double scanTotal = 0;
 		for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
 			switch(benchType) {
 			case OAKMAP:
@@ -486,9 +491,15 @@ public class Test {
 				getCount += threadLoopsOak[threadNum].getCount;
 				nodesTraversed += threadLoopsOak[threadNum].nodesTraversed;
 				structMods += threadLoopsOak[threadNum].structMods;
+				putTotal += threadLoopsOak[threadNum].numAdd;
+				putElapsedTime += threadLoopsOak[threadNum].putElapsedTime;
+
+				scanTotal += threadLoopsOak[threadNum].numScan;
+				scanElapsedTime += threadLoopsOak[threadNum].scanElapsedTime;
 				break;
 			}
 		}
+
 		throughput[currentIteration] = ((double) total / elapsedTime);
 		totalSize[currentIteration] = oakBench.size();
 		printLine('-');
@@ -498,6 +509,8 @@ public class Test {
 				+ (double) nodesTraversed / (double) getCount);
 		System.out.println("  Struct Modifications:     \t" + structMods);
 		System.out.println("  Throughput (ops/s):       \t" + throughput[currentIteration]);
+		System.out.println("  put Throughput (ops/s):       \t" + ((double) putTotal / putElapsedTime * Parameters.numThreads));
+		System.out.println("  scan Throughput (ops/s):       \t" + ((double) scanTotal / scanElapsedTime * Parameters.numThreads));
 		System.out.println("  Elapsed time (s):         \t" + elapsedTime);
 		System.out.println("  Operations:               \t" + total
 				+ "\t( 100 %)");

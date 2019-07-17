@@ -53,9 +53,12 @@ def scan_put_run(heap, data, threads):
     return maps_output
 
 
-def ingestion_run(heap, data):
-    offheap = math.ceil(((data * (1000 + 100))/1000000000)*1.1)
+def ingestion_run(heap, data, offheap=''):
+    if offheap == '':
+        offheap = math.ceil(((data * (1000 + 100))/1000000000)*1.1)
+
     onheap = heap - offheap
+        
 
     print('running ingestion test')
 
@@ -97,6 +100,19 @@ def ingestion_run(heap, data):
     return maps_output
 
 
+
+def rev_ingestion():
+
+    output = {}
+    for (heap,offheap) in [(15,11)]:
+        output[heap] = ingestion_run(heap, 10000000, offheap)
+
+    df = pd.DataFrame.from_dict(output)
+    df.to_csv(output_dir+'/rev_ingestion.csv', sep=' ', mode='w')
+    print(df)
+
+
+
 def ingestion():
     heap=32
     first_data = 5000
@@ -121,7 +137,8 @@ def scan_put():
 def main():
 
     bench_map = {'ingestion': ingestion,
-                 'scan_put': scan_put}
+                 'scan_put': scan_put,
+                 'rev_ingestion': rev_ingestion}
 
     for bench in sys.argv[1:]:
         bench_map[bench]()
