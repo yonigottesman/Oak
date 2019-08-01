@@ -1,6 +1,8 @@
 package com.oath.oak.synchrobench.maps;
 
 import com.oath.oak.synchrobench.contention.abstractions.CompositionalOakMap;
+import com.oath.oak.synchrobench.contention.benchmark.Parameters;
+
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -28,7 +30,7 @@ public class JavaSkipListMap<K extends MyBuffer, V extends MyBuffer> implements 
         MyBuffer res = skipListMap.putIfAbsent(key, value);
         if (res != null) {
             synchronized (res) {
-                res.buffer.putInt(1, res.buffer.getInt(1) + 1);
+                res.buffer.putLong(1, ~res.buffer.getLong(1));
             }
         }
 
@@ -51,24 +53,37 @@ public class JavaSkipListMap<K extends MyBuffer, V extends MyBuffer> implements 
 
     @Override
     public boolean ascendOak(K from, int length) {
-        Iterator iter = skipListMap.tailMap(from, true).entrySet().iterator();
+        Iterator<MyBuffer> iter = skipListMap.tailMap(from, true).values().iterator();
         int i = 0;
+        long aggregate = 0;
         while (iter.hasNext() && i < length) {
             i++;
-            iter.next();
+            MyBuffer value = iter.next();
+            if (Parameters.aggregateScan) {
+                aggregate += value.buffer.getLong(0);
+                aggregate += value.buffer.getLong(1);
+                aggregate += value.buffer.getLong(2);
+                aggregate += value.buffer.getLong(3);
+            }
         }
-        return i == length;
+        if (aggregate < 0) System.out.println("no good!");
+        return i == length && aggregate >= 0;
     }
 
     @Override
     public boolean descendOak(K from, int length) {
-        Iterator iter = skipListMap.descendingMap().tailMap(from, true).entrySet().iterator();
+        Iterator<MyBuffer> iter = skipListMap.descendingMap().tailMap(from, true).values().iterator();
         int i = 0;
+        long aggregate = 0;
         while (iter.hasNext() && i < length) {
             i++;
-            iter.next();
+            MyBuffer value = iter.next();
+            if (Parameters.aggregateScan) {
+                aggregate += value.buffer.getLong(0);
+            }
         }
-        return i == length;
+        if (aggregate < 0) System.out.println("no good!");
+        return i == length && aggregate >= 0 ;
     }
 
     @Override

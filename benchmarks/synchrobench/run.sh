@@ -39,6 +39,7 @@ declare -A scenarios=(
                       ["zc-get-only"]="-c --buffer"
                       ["ascend-only"]=""
                       ["zc-ascend-only"]="--buffer"
+                      ["ascend-only-aggregate"]="--aggregatescan"
                       ["descend-only"]="-c -a 100"
                       ["zc-descend-only"]="--buffer -c -a 100"
                       ["put-only"]="-a 0 -u 100"

@@ -562,7 +562,14 @@ public class OakMap<K, V> extends AbstractMap<K, V> implements AutoCloseable, Co
         }
     }
 
-
+    public <T> Iterator<T> transformIterator(Function<ByteBuffer, T> transformer) {
+        return internalOakMap.valuesTransformIterator(fromKey,
+                fromInclusive,
+                toKey,
+                toInclusive,
+                isDescending,
+                transformer);
+    }
     /* ----------- Oak misc methods ----------- */
 
     /**

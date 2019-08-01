@@ -29,6 +29,7 @@ public class Parameters {
 
 	public static boolean zeroCopy = false;
 	public static boolean copmuteIfPresent;
+	public static boolean aggregateScan = false;
 
 	public static KeyDist keyDistribution = KeyDist.RANDOM;
 

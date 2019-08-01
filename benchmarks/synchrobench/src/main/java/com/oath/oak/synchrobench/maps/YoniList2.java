@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements CompositionalOakMap<K, V> {
     private ConcurrentSkipListMap<Object, Cell> skipListMap;
@@ -153,35 +155,49 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
 
     @Override
     public boolean ascendOak(K from, int length) {
-        Iterator iter = skipListMap.tailMap(from, true).entrySet().iterator();
+        Iterator<Cell> iter = skipListMap.tailMap(from, true).values().iterator();
         return iterate(iter, length);
     }
 
     @Override
     public boolean descendOak(K from, int length) {
-        Iterator iter = skipListMap.descendingMap().tailMap(from, true).entrySet().iterator();
+        Iterator<Cell> iter = skipListMap.descendingMap().tailMap(from, true).values().iterator();
         return iterate(iter, length);
     }
 
 
-    private boolean iterate(Iterator iter, int length) {
+    private boolean iterate(Iterator<Cell> iter, int length) {
         int i = 0;
+        long aggregate = 0;
         while (iter.hasNext() && i < length) {
-            Map.Entry<Object, Cell> entry = (Map.Entry<Object, Cell>) iter.next();
-            Cell cell = entry.getValue();
+            Cell cell = iter.next();
             //only if cell is not null value is not deleted or not set yet.
             if (cell.value.get() != null) {
                 if (!Parameters.zeroCopy) {
                     MyBuffer des = MyBufferOak.serializer.deserialize(cell.value.get());
+                    if (Parameters.aggregateScan) {
+                        aggregate += cell.value.get().getLong(0);
+                        aggregate += cell.value.get().getLong(1);
+                        aggregate += cell.value.get().getLong(2);
+                        aggregate += cell.value.get().getLong(3);
+                    }
+
                     //YONIGO - I just do this so that hopefully jvm doesnt optimize out the deserialize
                     if (des != null) i++;
                 } else {
+                    if (Parameters.aggregateScan) {
+                        aggregate += cell.value.get().getLong(0);
+                        aggregate += cell.value.get().getLong(1);
+                        aggregate += cell.value.get().getLong(2);
+                        aggregate += cell.value.get().getLong(3);
+                    }
                     i++;
                 }
 
             }
         }
-        return i == length;
+        if (aggregate < 0) System.out.println("NO GOOD !!");
+        return i == length && aggregate >= 0;
     }
 
 
@@ -204,11 +220,15 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
         return skipListMap.size();
     }
 
+
+
     @Override
     public void putIfAbsentComputeIfPresentOak(K key, V value) {
         Cell newCell = new Cell();
         newCell.key.set(key);
         Cell prevValue = skipListMap.putIfAbsent(newCell, newCell);
+
+        Consumer<ByteBuffer> computeFunction = (ByteBuffer buffer) -> buffer.putLong(1, ~buffer.getLong(1));
 
         if (prevValue == null) {
             ByteBuffer keybb = allocator.allocate(MyBufferOak.serializer.calculateSize(key));
@@ -218,7 +238,7 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
             if (!newCell.value.compareAndSet(null, valuebb)) {
                 allocator.free(valuebb);
                 synchronized (newCell.value) {
-                    newCell.value.get().putInt(1, newCell.value.get().getInt(1) + 1);
+                    computeFunction.accept(newCell.value.get());
                 }
             }
             newCell.key.set(keybb);
@@ -229,12 +249,12 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
                 if (!prevValue.value.compareAndSet(null, valuebb)) {
                     allocator.free(valuebb);
                     synchronized (newCell.value) {
-                        prevValue.value.get().putInt(1, prevValue.value.get().getInt(1) + 1);
+                        computeFunction.accept(prevValue.value.get());
                     }
                 }
             } else {
                 synchronized (prevValue.value) {
-                    prevValue.value.get().putInt(1, prevValue.value.get().getInt(1) + 1);
+                    computeFunction.accept(prevValue.value.get());
                 }
             }
         }

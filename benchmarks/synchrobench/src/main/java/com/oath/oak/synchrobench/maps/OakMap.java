@@ -4,6 +4,7 @@ package com.oath.oak.synchrobench.maps;
 import com.oath.oak.Chunk;
 import com.oath.oak.NativeAllocator.OakNativeMemoryAllocator;
 import com.oath.oak.OakMapBuilder;
+import com.oath.oak.OakRBuffer;
 import com.oath.oak.synchrobench.contention.abstractions.CompositionalOakMap;
 import com.oath.oak.synchrobench.contention.benchmark.Parameters;
 
@@ -69,12 +70,37 @@ public class OakMap<K extends MyBuffer, V extends MyBuffer> implements Compositi
     @Override
     public boolean ascendOak(K from, int length) {
         com.oath.oak.OakMap<MyBuffer, MyBuffer> sub = oak.tailMap(from, true);
+        boolean result;
+        if (Parameters.aggregateScan) {
+            result = createAndScanViewTransform(sub, length);
+        } else {
+            result = createAndScanView(sub, length);
+        }
 
-        boolean result = createAndScanView(sub, length);
 
         sub.close();
 
         return result;
+    }
+
+    private boolean createAndScanViewTransform(com.oath.oak.OakMap<MyBuffer, MyBuffer> sub, int length) {
+        final long[] aggregate = {0};
+        Iterator<Long> iter = sub.transformIterator((buffer) -> {
+            aggregate[0] += buffer.getLong(0);
+            aggregate[0] += buffer.getLong(1);
+            aggregate[0] += buffer.getLong(2);
+            aggregate[0] += buffer.getLong(3);
+            return Long.valueOf(1);
+        });
+
+        int i = 0;
+
+        while (iter.hasNext() && i < length) {
+            i++;
+            iter.next();
+        }
+        if (aggregate[0] < 0) System.out.println("no good");
+        return i == length && aggregate[0] >= 0;
     }
 
     @Override
@@ -93,9 +119,9 @@ public class OakMap<K extends MyBuffer, V extends MyBuffer> implements Compositi
     private boolean createAndScanView(com.oath.oak.OakMap<MyBuffer, MyBuffer> subMap, int length) {
         Iterator iter;
         if (Parameters.zeroCopy) {
-            iter = subMap.zc().entrySet().iterator();
+            iter = subMap.zc().values().iterator();
         } else {
-            iter = subMap.entrySet().iterator();
+            iter = subMap.values().iterator();
         }
 
         return iterate(iter, length);
@@ -138,7 +164,7 @@ public class OakMap<K extends MyBuffer, V extends MyBuffer> implements Compositi
 
     @Override
     public void putIfAbsentComputeIfPresentOak(K key, V value) {
-        oak.zc().putIfAbsentComputeIfPresent(key, value, b -> b.putInt(1,b.getInt(1) + 1));
+        oak.zc().putIfAbsentComputeIfPresent(key, value, b -> b.putLong(1, ~b.getLong(1)));
     }
 
     public void printMemStats() {

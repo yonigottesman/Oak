@@ -282,6 +282,8 @@ public class Test {
                         Parameters.zeroCopy = true;
                 } else if (currentArg.equals("--computeifpresent")) {
 					Parameters.copmuteIfPresent = true;
+				} else if (currentArg.equals("--aggregatescan")) {
+					Parameters.aggregateScan = true;
 				} else if (currentArg.equals("--inc")) {
                         Parameters.keyDistribution = Parameters.KeyDist.INCREASING;
 				} else {

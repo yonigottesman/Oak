@@ -970,6 +970,28 @@ class InternalOakMap<K, V> {
             return new AbstractMap.SimpleImmutableEntry<>(bb, currentHandle);
         }
 
+        /**
+         * Advances next to higher entry.
+         * Return previous index
+         */
+        Handle advanceForValue() {
+
+            if (state == null) {
+                throw new NoSuchElementException();
+            }
+
+            Chunk.State chunkState = state.getChunk().state();
+
+            if (chunkState == Chunk.State.RELEASED) {
+                initAfterRebalance();
+            }
+
+
+            Handle currentHandle = state.getChunk().getHandle(state.getIndex());
+            advanceState();
+            return currentHandle;
+        }
+
         private void initState(boolean isDescending, K lowerBound, boolean lowerInclusive,
                                K upperBound, boolean upperInclusive) {
 
@@ -1061,7 +1083,7 @@ class InternalOakMap<K, V> {
 
         @Override
         public OakRBuffer next() {
-            Handle handle = advance().getValue();
+            Handle handle = advanceForValue();
             if (handle == null)
                 return null;
 
@@ -1080,7 +1102,7 @@ class InternalOakMap<K, V> {
         }
 
         public T next() {
-            Handle handle = advance().getValue();
+            Handle handle = advanceForValue();
             if (handle == null) {
                 return null;
             }
