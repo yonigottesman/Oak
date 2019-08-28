@@ -27,13 +27,13 @@ public class JavaSkipListMap<K extends MyBuffer, V extends MyBuffer> implements 
 
     @Override
     public void putIfAbsentComputeIfPresentOak(K key, V value) {
-        MyBuffer res = skipListMap.putIfAbsent(key, value);
-        if (res != null) {
-            synchronized (res) {
-                res.buffer.putLong(1, ~res.buffer.getLong(1));
-            }
-        }
 
+        skipListMap.merge(key, value, (old,v) -> {
+            synchronized (old) {
+                old.buffer.putLong(1, ~old.buffer.getLong(1));
+            }
+            return old;
+        });
     }
 
     @Override
@@ -80,6 +80,9 @@ public class JavaSkipListMap<K extends MyBuffer, V extends MyBuffer> implements 
             MyBuffer value = iter.next();
             if (Parameters.aggregateScan) {
                 aggregate += value.buffer.getLong(0);
+                aggregate += value.buffer.getLong(1);
+                aggregate += value.buffer.getLong(2);
+                aggregate += value.buffer.getLong(3);
             }
         }
         if (aggregate < 0) System.out.println("no good!");

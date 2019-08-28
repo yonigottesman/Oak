@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -221,34 +222,21 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
     }
 
 
-
     @Override
     public void putIfAbsentComputeIfPresentOak(K key, V value) {
-        Cell newCell = new Cell();
-        newCell.key.set(key);
-        Cell prevValue = skipListMap.putIfAbsent(newCell, newCell);
+
 
         Consumer<ByteBuffer> computeFunction = (ByteBuffer buffer) -> buffer.putLong(1, ~buffer.getLong(1));
 
-        if (prevValue == null) {
-            ByteBuffer keybb = allocator.allocate(MyBufferOak.serializer.calculateSize(key));
-            ByteBuffer valuebb = allocator.allocate(MyBufferOak.serializer.calculateSize( value));
-            MyBufferOak.serializer.serialize(key, keybb);
-            MyBufferOak.serializer.serialize(value, valuebb);
-            if (!newCell.value.compareAndSet(null, valuebb)) {
-                allocator.free(valuebb);
-                synchronized (newCell.value) {
-                    computeFunction.accept(newCell.value.get());
-                }
-            }
-            newCell.key.set(keybb);
-        } else {
+        BiFunction<Object, Cell, Cell> fun = (prevValueO,v) -> {
+            Cell prevValue = (Cell)prevValueO;
+            // cell is in map but maybe not initialized yet
             if (prevValue.value.get() == null) {
                 ByteBuffer valuebb = allocator.allocate(MyBufferOak.serializer.calculateSize( value));
                 MyBufferOak.serializer.serialize(value, valuebb);
                 if (!prevValue.value.compareAndSet(null, valuebb)) {
                     allocator.free(valuebb);
-                    synchronized (newCell.value) {
+                    synchronized (prevValue.value) {
                         computeFunction.accept(prevValue.value.get());
                     }
                 }
@@ -257,8 +245,73 @@ public class YoniList2<K extends MyBuffer, V extends MyBuffer> implements Compos
                     computeFunction.accept(prevValue.value.get());
                 }
             }
+            return prevValue;
+        };
+
+
+        Cell newCell = new Cell();
+        newCell.key.set(key);
+
+        boolean in = skipListMap.containsKey(newCell);
+
+        Cell retval = skipListMap.merge(newCell, newCell, fun);
+
+        // If we only added and didnt do any compute, still have to init cell
+        if (retval.value.get() == null) {
+            ByteBuffer keybb = allocator.allocate(MyBufferOak.serializer.calculateSize(key));
+            ByteBuffer valuebb = allocator.allocate(MyBufferOak.serializer.calculateSize( value));
+            MyBufferOak.serializer.serialize(value, valuebb);
+            MyBufferOak.serializer.serialize(key, keybb);
+            if (!retval.value.compareAndSet(null, valuebb)) {
+                allocator.free(valuebb);
+                synchronized (retval.value) {
+                    computeFunction.accept(retval.value.get());
+                }
+            }
+            retval.key.set(keybb);
         }
+
     }
+
+
+
+//    @Override
+//    public void putIfAbsentComputeIfPresentOak(K key, V value) {
+//        Cell newCell = new Cell();
+//        newCell.key.set(key);
+//        Cell prevValue = skipListMap.putIfAbsent(newCell, newCell);
+//
+//        Consumer<ByteBuffer> computeFunction = (ByteBuffer buffer) -> buffer.putLong(1, ~buffer.getLong(1));
+//
+//        if (prevValue == null) {
+//            ByteBuffer keybb = allocator.allocate(MyBufferOak.serializer.calculateSize(key));
+//            ByteBuffer valuebb = allocator.allocate(MyBufferOak.serializer.calculateSize( value));
+//            MyBufferOak.serializer.serialize(key, keybb);
+//            MyBufferOak.serializer.serialize(value, valuebb);
+//            if (!newCell.value.compareAndSet(null, valuebb)) {
+//                allocator.free(valuebb);
+//                synchronized (newCell.value) {
+//                    computeFunction.accept(newCell.value.get());
+//                }
+//            }
+//            newCell.key.set(keybb);
+//        } else {
+//            if (prevValue.value.get() == null) {
+//                ByteBuffer valuebb = allocator.allocate(MyBufferOak.serializer.calculateSize( value));
+//                MyBufferOak.serializer.serialize(value, valuebb);
+//                if (!prevValue.value.compareAndSet(null, valuebb)) {
+//                    allocator.free(valuebb);
+//                    synchronized (newCell.value) {
+//                        computeFunction.accept(prevValue.value.get());
+//                    }
+//                }
+//            } else {
+//                synchronized (prevValue.value) {
+//                    computeFunction.accept(prevValue.value.get());
+//                }
+//            }
+//        }
+//    }
 
     public class MyReference<T>{
         T reference;
